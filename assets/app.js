@@ -16,7 +16,7 @@ const params = new URLSearchParams(location.search);
 const ph = txt => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect width='100%' height='100%' fill='#e8f3ec'/><text x='50%' y='50%' text-anchor='middle' fill='#2f7d4f' font-family='sans-serif' font-size='20'>${txt}</text></svg>`);
 const img = p => p.img || ph(nm(p));
 
-function addToCart(id, q = 1) { const c = cart(); c[id] = (c[id] || 0) + q; LS.set("cart", c); renderChrome(); }
+function addToCart(id, q = 1) { const c = cart(); c[id] = (c[id] || 0) + q; LS.set("cart", c); renderChrome(); const cl = document.querySelector(".cartlink"); if (cl) cl.classList.add("bump"); toast(lang === "mn" ? "Сагсанд нэмэгдлээ ✓" : "Added to cart ✓"); }
 function setQty(id, q) { const c = cart(); q > 0 ? c[id] = q : delete c[id]; LS.set("cart", c); renderChrome(); render(); }
 window.addToCart = addToCart; window.setQty = setQty;
 
@@ -103,5 +103,21 @@ async function submitOrder(e) {
   } else location.href = `mailto:${C.email}?subject=${encodeURIComponent("Order")}&body=${encodeURIComponent(body)}`;
 }
 
-function render() { $("#app").innerHTML = pages[document.body.dataset.page](); const o = $("#order"); if (o) o.onsubmit = submitOrder; }
+function render() { $("#app").innerHTML = pages[document.body.dataset.page](); const o = $("#order"); if (o) o.onsubmit = submitOrder; fx(); }
+
+// ===== Animation =====
+function toast(msg) {
+  let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 1600);
+}
+function fx() {
+  if (!window.__fx) {
+    window.__fx = 1;
+    const b = document.createElement("button"); b.id = "totop"; b.textContent = "↑"; b.onclick = () => scrollTo({ top: 0, behavior: "smooth" }); document.body.appendChild(b);
+    addEventListener("scroll", () => { $("#hdr").classList.toggle("stuck", scrollY > 10); b.classList.toggle("show", scrollY > 500); }, { passive: true });
+  }
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { const el = e.target; el.classList.add("in"); io.unobserve(el); setTimeout(() => { el.classList.remove("rv", "in"); el.style.transitionDelay = ""; }, 900); } }), { threshold: 0.1 });
+  document.querySelectorAll(".card,.tile,.post,.hero a,section>.sh,.pd>*,.doc").forEach((el, i) => { el.classList.add("rv"); el.style.transitionDelay = (i % 6) * 70 + "ms"; io.observe(el); });
+}
 renderChrome(); render();
